@@ -74,4 +74,4 @@ def send_email():
     return render_template('email_form.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
