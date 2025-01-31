@@ -35,18 +35,7 @@ html_template = """
 <body>
   <h1>Logged Request Data</h1>
   {% if data %}
-    <table>
-      <tr>
-        <th>#</th>
-        <th>Data</th>
-      </tr>
-      {% for idx, item in enumerate(data) %}
-      <tr>
-        <td>{{ idx + 1 }}</td>
-        <td>{{ item }}</td>
-      </tr>
-      {% endfor %}
-    </table>
+    <p>{{ data }}</p>
   {% else %}
     <p>No data received yet.</p>
   {% endif %}
