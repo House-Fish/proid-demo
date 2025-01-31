@@ -6,10 +6,14 @@ from dotenv import load_dotenv
 import json
 import time
 import os
+import logging
 
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')  # Required for flash messages
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # You would set this in your environment variables
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
@@ -79,14 +83,17 @@ def show_logs():
 def stream():
     def event_stream():
         previous_state = {}
-        while True:
-            # Only send updates if state has changed
-            if previous_state != current_state:
-                yield f"data: {json.dumps(current_state)}\n\n"
-                previous_state.update(current_state)
-            time.sleep(1)
+        try:
+            while True:
+                # Only send updates if state has changed
+                if previous_state != current_state:
+                    yield f"data: {json.dumps(current_state)}\n\n"
+                    previous_state.update(current_state)
+                time.sleep(1)
+        except GeneratorExit:
+            logger.info("Client disconnected from stream")
 
-    return Response(event_stream(), content_type='text/event-stream')
+    return Response(event_stream(), content_pe='text/event-stream')
 
 @app.route('/logout')
 def logout():
