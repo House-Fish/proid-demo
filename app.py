@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from functools import wraps
@@ -10,6 +10,7 @@ app.secret_key = 'your-secret-key-here'  # Required for flash messages
 # You would set this in your environment variables
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 AUTH_PASSCODE = os.getenv('AUTH_PASSCODE', 'your-secure-passcode')
+AUTH_TOKEN = "your_secure_auth_token"
 
 body = open('./templates/december.html','r').read()
 
@@ -32,6 +33,27 @@ def login():
         else:
             flash('Invalid passcode!', 'error')
     return render_template('login.html')
+
+@app.route('/api/bocah', methods=['POST']) 
+def bocah():
+    auth_header = request.headers.get('Authorization')
+
+    if not auth_header:
+        return jsonify({"error": "Authorization header is missing"}), 401
+
+    if auth_header != f"Bearer {AUTH_TOKEN}":
+        return jsonify({"error": "Invalid authorization token"}), 403
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+    
+    print(data)
+
+    result = {"message": "Request successful", "data_received": data}
+
+    return jsonify(result), 200
 
 @app.route('/logout')
 def logout():
