@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')  # Required for flash messages
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins=["https://proid.housefish.dev"])
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,9 @@ def handle_post_request():
 @app.route('/state', methods=['GET'])
 def show_logs():
     # Render the log dashboard
-    return render_template('state.html', current_state=current_state)
+    return render_template('state.html', 
+                           transportation=current_state['Transportation'], 
+                           air_conditioner=current_state['Air-Conditioner'])
 
 @app.route('/logout')
 def logout():
