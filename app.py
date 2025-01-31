@@ -1,47 +1,28 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify, render_template_string
+from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify, Response
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from functools import wraps
+from dotenv import load_dotenv
+import json
+import time
 import os
 
+load_dotenv()
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Required for flash messages
+app.secret_key = os.getenv('SECRET_KEY')  # Required for flash messages
 
 # You would set this in your environment variables
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
-AUTH_PASSCODE = os.getenv('AUTH_PASSCODE', 'your-secure-passcode')
-AUTH_TOKEN = "your_secure_auth_token"
+AUTH_PASSCODE = os.getenv('AUTH_PASSCODE')
+AUTH_TOKEN = os.getenv("AUTH_TOKEN")
 
 body = open('./templates/december.html','r').read()
 
-# Store request data in memory (simple for demonstration purposes)
-data_store = []
-
-# HTML template to display the logged data
-html_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Request Data Log</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; border: 1px solid #ddd; }
-    th { background-color: #f4f4f4; }
-  </style>
-</head>
-<body>
-  <h1>Logged Request Data</h1>
-  {% if data %}
-    <p>{{ data }}</p>
-  {% else %}
-    <p>No data received yet.</p>
-  {% endif %}
-</body>
-</html>
-"""
+# State storage for Transportation and Air-Conditioner
+current_state = {
+    "Transportation": "Unknown",
+    "Air-Conditioner": "Unknown"
+}
 
 def require_auth(f):
     @wraps(f)
@@ -63,8 +44,10 @@ def login():
             flash('Invalid passcode!', 'error')
     return render_template('login.html')
 
-@app.route('/api/bocah', methods=['POST']) 
-def bocah():
+@app.route('/api/bocah', methods=['POST'])
+def handle_post_request():
+
+    # Check for the correct authentication header
     auth_header = request.headers.get('Authorization')
 
     if not auth_header:
@@ -77,17 +60,33 @@ def bocah():
 
     if not data:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
-    
-    data_store.append(data)
 
-    result = {"message": "Request successful", "data_received": data}
+    # Update state based on key-value pairs
+    if data["key"] == "Environment":
+        current_state["Air-Conditioner"] = data["value"]
+    elif data["key"] == "Motion State":
+        current_state["Transportation"] = data["value"]
 
-    return jsonify(result), 200
+    return jsonify({"message": "State updated successfully", "current_state": current_state}), 200
 
-@app.route('/logs', methods=['GET'])
+
+@app.route('/state', methods=['GET'])
 def show_logs():
-    # Render the data log page
-    return render_template_string(html_template, data=data_store)
+    # Render the log dashboard
+    return render_template('state.html', current_state=current_state)
+
+@app.route('/stream')
+def stream():
+    def event_stream():
+        previous_state = {}
+        while True:
+            # Only send updates if state has changed
+            if previous_state != current_state:
+                yield f"data: {json.dumps(current_state)}\n\n"
+                previous_state.update(current_state)
+            time.sleep(1)
+
+    return Response(event_stream(), content_type='text/event-stream')
 
 @app.route('/logout')
 def logout():
@@ -130,4 +129,4 @@ def send_email():
     return render_template('email_form.html')
 
 if __name__ == '__main__':
-    app.run()
+    app.run(threaded=True)
