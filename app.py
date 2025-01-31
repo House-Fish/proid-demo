@@ -3,8 +3,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from functools import wraps
 from dotenv import load_dotenv
-import json
-import time
+from flask_socketio import SocketIO
 import os
 import logging
 
@@ -12,6 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')  # Required for flash messages
 
+socketio = SocketIO(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,8 @@ def handle_post_request():
     elif data["key"] == "Motion State":
         current_state["Transportation"] = data["value"]
 
+    socketio.emit('state_update', current_state)
+
     return jsonify({"message": "State updated successfully", "current_state": current_state}), 200
 
 
@@ -78,22 +80,6 @@ def handle_post_request():
 def show_logs():
     # Render the log dashboard
     return render_template('state.html', current_state=current_state)
-
-@app.route('/stream')
-def stream():
-    def event_stream():
-        previous_state = {}
-        try:
-            while True:
-                # Only send updates if state has changed
-                if previous_state != current_state:
-                    yield f"data: {json.dumps(current_state)}\n\n"
-                    previous_state.update(current_state)
-                time.sleep(1)
-        except GeneratorExit:
-            logger.info("Client disconnected from stream")
-
-    return Response(event_stream(), content_pe='text/event-stream')
 
 @app.route('/logout')
 def logout():
