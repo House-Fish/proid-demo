@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify, render_template_string
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from functools import wraps
@@ -13,6 +13,46 @@ AUTH_PASSCODE = os.getenv('AUTH_PASSCODE', 'your-secure-passcode')
 AUTH_TOKEN = "your_secure_auth_token"
 
 body = open('./templates/december.html','r').read()
+
+# Store request data in memory (simple for demonstration purposes)
+data_store = []
+
+# HTML template to display the logged data
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Data Log</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ddd; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Logged Request Data</h1>
+  {% if data %}
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Data</th>
+      </tr>
+      {% for idx, item in enumerate(data) %}
+      <tr>
+        <td>{{ idx + 1 }}</td>
+        <td>{{ item }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No data received yet.</p>
+  {% endif %}
+</body>
+</html>
+"""
 
 def require_auth(f):
     @wraps(f)
@@ -49,11 +89,16 @@ def bocah():
     if not data:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
     
-    print(data)
+    data_store.append(data)
 
     result = {"message": "Request successful", "data_received": data}
 
     return jsonify(result), 200
+
+@app.route('/logs', methods=['GET'])
+def show_logs():
+    # Render the data log page
+    return render_template_string(html_template, data=data_store)
 
 @app.route('/logout')
 def logout():
