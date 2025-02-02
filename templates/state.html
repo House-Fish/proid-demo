@@ -3,22 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <title>State Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .state-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Real-Time State Dashboard</h1>
-    <div id="transportation">Transportation: {{ transportation }}</div>
-    <div id="air_conditioner">Air-Conditioner: {{ air_conditioner }}</div>
-
+    <div class="state-panel transportation">
+        <p id="t-value"></p>
+    </div>
+    <div class="state-panel air-conditioner">
+        <p id="ac-value"></p>
+    </div>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         const socket = io();
 
-        // Listen for state updates from the server
+        function updateState(ac, t) {
+            const t_panel = document.querySelector('.transportation');
+            const t_text = document.getElementById("t-value");
+
+            if (t == "Walking"){
+                t_panel.style.backgroundColor = '#c8e6c9';  // Light green
+                t_text.textContent = "🚶 transportation: Walking";
+            } else if (t === "Stationary") {
+                t_panel.style.backgroundColor = '#ffebee';  // Light red 
+                t_text.textContent = "🚶 transportation: Stationary";
+            } else {
+                t_panel.style.backgroundColor = '#d3d3d3';  // Light grey
+                t_text.textContent = "🚶 transportation: Unknown";
+            }
+            // Air Conditioner
+            const ac_panel = document.querySelector('.air-conditioner');
+            const ac_text = document.getElementById("ac-value");
+
+            if (ac === "Air-Conditioner") {
+                ac_panel.style.backgroundColor = '#c8e6c9';  // Light green
+                ac_text.textContent = "❄️ Air-Conditioner: On";
+            } else if (ac == "Non Air-Conditioner"){
+                ac_panel.style.backgroundColor = '#ffebee';  // Light red 
+                ac_text.textContent = "❄️ Air-Conditioner: Off";
+            } else {
+                ac_panel.style.backgroundColor = '#d3d3d3';  // Light grey
+                ac_text.textContent = "❄️ Air-Conditioner: Unknown";
+            }
+        }
+
+        updateState("{{ air_conditioner }}", "{{ transportation }}")
+
         socket.on('state_update', (data) => {
-            document.getElementById('transportation').textContent = 
-                `Transportation: ${data["Transportation"]}`;
-            document.getElementById('air_conditioner').textContent = 
-                `Air-Conditioner: ${data["Air-Conditioner"]}`;
+            updateState(data["Air-Conditioner"], data["Transportation"])
         });
     </script>
 </body>
