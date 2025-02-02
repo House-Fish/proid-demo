@@ -1,26 +1,23 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify, Response
+from flask import Flask, render_template, render_template_string, request, flash, redirect, url_for, session, jsonify
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from functools import wraps
 from dotenv import load_dotenv
 from flask_socketio import SocketIO
 import os
-import logging
+import random
 
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')  # Required for flash messages
 
 socketio = SocketIO(app, cors_allowed_origins=["https://proid.housefish.dev"])
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # You would set this in your environment variables
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 AUTH_PASSCODE = os.getenv('AUTH_PASSCODE')
 AUTH_TOKEN = os.getenv("AUTH_TOKEN")
 
-body = open('./templates/december.html','r').read()
 
 # State storage for Transportation and Air-Conditioner
 current_state = {
@@ -77,6 +74,7 @@ def handle_post_request():
 
 
 @app.route('/state', methods=['GET'])
+@require_auth
 def show_logs():
     # Render the log dashboard
     return render_template('state.html', 
@@ -89,6 +87,7 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
+
 @app.route('/', methods=['GET', 'POST'])
 @require_auth
 def send_email():
@@ -96,13 +95,25 @@ def send_email():
         name = request.form.get('name')
         email = request.form.get('email')
 
+        # List of available report files
+        reports = ['./templates/january.html', './templates/january1.html', './templates/january2.html', 
+                   './templates/january3.html', './templates/january4.html']
+        
+        # Randomly select a report
+        selected_report = random.choice(reports)
+
+        # Read the selected report
+        body = open(selected_report, 'r').read()
+
+        # Use Jinja to update the name in the report
+        body = render_template_string(body, name=name)
         
         try:
             # Create the email message
             message = Mail(
                 from_email='me@housefish.dev',  # Must be verified with SendGrid
                 to_emails=email,
-                subject=f'Hello {name}',
+                subject=f'Hello {name}, your monthly carbon report is in 🌱',
                 html_content=body
             )
 
