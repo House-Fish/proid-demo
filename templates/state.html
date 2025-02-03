@@ -43,7 +43,7 @@
             const t_panel = document.querySelector('.transportation');
             const t_text = document.getElementById("t-value");
 
-            if (t == "Walking"){
+            if (t === "Walking"){
                 t_panel.style.backgroundColor = '#c8e6c9';  // Light green
                 t_text.textContent = "🚶 Transportation: Walking";
             } else if (t === "Stationary") {
@@ -60,7 +60,7 @@
             if (ac === "Air-conditioned") {
                 ac_panel.style.backgroundColor = '#c8e6c9';  // Light green
                 ac_text.textContent = "❄️ Air-Conditioner: On";
-            } else if (ac == "Non Air-conditioned"){
+            } else if (ac === "Non Air-conditioned"){
                 ac_panel.style.backgroundColor = '#ffebee';  // Light red 
                 ac_text.textContent = "❄️ Air-Conditioner: Off";
             } else {
